@@ -1,0 +1,402 @@
+---
+title: "Drets LGTBIQ+"
+author: "Noelia Rodríguez"
+date: "2025-12-09"
+output: word_document
+---
+
+```{r}
+
+# --- PAS 1: ACTIVAR ELS PAQUETS ---
+# Això s'ha de fer SEMPRE que obris l'RStudio (és com obrir l'App per usar-la).
+
+library(tidyverse)
+library(readxl)
+library(questionr)
+```
+
+```{r}
+# 1. Activem el paquet per llegir Excels (imprescindible fer-ho cada cop que obris R)
+library(readxl)
+
+# 2. Carreguem el fitxer
+# "dades" serà el nom que farem servir dins d'R per referir-nos a la teva taula
+dades <- read_excel("dades.xlsx")
+
+# 3. Comprovem que s'ha carregat bé
+View(dades)
+
+# 1. Assegurat que el paquet està activat
+library(questionr)
+
+# 2. Demanem la taula de freqüències
+# TRUC: Quan escriguis "dades$" espera un segon...
+# L'RStudio et desplegarà una llista amb totes les teves variables.
+# Selecciona la que vulguis analitzar (per exemple, "Genere" o la que tinguis).
+
+freq(dades$P1, valid = TRUE)
+```
+  
+```{r}
+# Posa dins del c() els noms exactes de les columnes que vols analitzar (entre cometes)
+# Exemple: c("Edat", "Genere", "Pregunta1")
+
+lapply(dades[c("P1", "P2", "P3", "P4", "P5", "P6", "P10", "P11", "P12", "P13", "P14", "P15", "P16", "P17", "P18", "P19", "P20", "P21", "P22", "P23")], freq, valid = TRUE)
+```
+```{r}
+```
+
+
+```{r}
+# Substitueix "Nom_Variable_Escalar" per la teva (ex: Edat, Val_Drets, etc.)
+
+dades %>%
+  summarise(
+    Imp.cultura = "P7",  # Nom que vols que surti a l'etiqueta
+    Mitjana = mean(P7, na.rm = TRUE),
+    Desv_Estandard = sd(P7, na.rm = TRUE),
+    Minim = min(P7, na.rm = TRUE), # Opcional: el valor més baix
+    Maxim = max(P7, na.rm = TRUE)  # Opcional: el valor més alt
+  )
+```
+
+  
+```{r}
+library(tidyverse)
+```
+```{r}
+# Substitueix "Nom_Variable_Escalar" per la teva (ex: Edat, Val_Drets, etc.)
+
+dades %>%
+  summarise(
+    Variable = "P6",  # Nom que vols que surti a l'etiqueta
+    Mitjana = mean(P6, na.rm = TRUE),
+    Desv_Estandard = sd(P6, na.rm = TRUE),
+    Minim = min(P6, na.rm = TRUE), # Opcional: el valor més baix
+    Maxim = max(P6, na.rm = TRUE)  # Opcional: el valor més alt
+  )
+ 
+```
+  
+```{r}
+library(tidyverse)
+
+# 1. Arreglem el ZERO (posa el text EXACTE que surt al teu Excel entre les cometes)
+dades$P6[dades$P6 == "0 - Molt negatiu"] <- "0"
+
+# 2. Arreglem el CINC (el que ja teníem)
+dades$P6[dades$P6 == "5 - Molt positiu"] <- "5"
+
+# 3. Convertim tota la columna a NÚMEROS reals
+dades$P6 <- as.numeric(dades$P6)
+
+# 4. Ara ja podem fer la mitjana tranquil·lament
+dades %>%
+  summarise(
+    Variable = "P6",
+    Mitjana = mean(P6, na.rm = TRUE),
+    Desv_Estandard = sd(P6, na.rm = TRUE),
+    Minim = min(P6, na.rm = TRUE),
+    Maxim = max(P6, na.rm = TRUE)
+  )
+```
+```{r}
+library(tidyverse)
+
+# 1. FEM LA LLISTA DE PREGUNTES
+# Posa aquí dins (entre cometes) totes les variables que vulguis analitzar juntes
+# Exemple: c("P6", "P7", "P8", "P9")
+variables_a_analitzar <- c("P6", "P7", "P8", "P9") 
+
+# 2. NETEGEM, CONVERTIM I CALCULEM TOT DE COP
+dades %>%
+  select(all_of(variables_a_analitzar)) %>%  # Agafem només aquestes columnes
+  
+  # --- Neteja automàtica per a totes les columnes seleccionades ---
+  mutate(across(everything(), ~ replace(., . == "0 - Molt negatiu", "0"))) %>%
+  mutate(across(everything(), ~ replace(., . == "5 - Molt positiu", "5"))) %>%
+  mutate(across(everything(), as.numeric)) %>% # Ho convertim tot a números
+  
+  # --- Creació de la taula resum ---
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Puntuacio") %>% 
+  group_by(Variable) %>% 
+  summarise(
+    Mitjana = mean(Puntuacio, na.rm = TRUE),
+    Desv_Estandard = sd(Puntuacio, na.rm = TRUE),
+    Minim = min(Puntuacio, na.rm = TRUE),
+    Maxim = max(Puntuacio, na.rm = TRUE)
+  )
+```
+```{r}
+library(tidyverse)
+library(readxl)
+
+# 1. Carreguem les dades originals
+dades <- read_excel("dades.xlsx")
+
+# 2. Definim quines columnes volem netejar
+# Posa aquí totes les que tinguin aquest problema (P10, P17, etc.)
+variables_a_netejar <- c("P1", "P2", "P3", "P4", "P5", "P10", "P11", "P12", "P13", "P14", "P15", "P16", "P17", "P18", "P19", "P20", "P21", "P22", "P23")
+
+# 3. EL CODI DE NETEJA
+dades <- dades %>%
+  mutate(across(all_of(variables_a_netejar), ~ na_if(., "No ho sé")))
+
+# 4. Comprovem que ha funcionat
+# Ara no hauria de sortir "No ho sé" a la llista, sinó <NA>
+unique(dades$P10)
+unique(dades$P17)
+```
+
+```{r}
+library(tidyverse)
+
+# Canvia "P1" pel nom de la teva variable nominal
+ggplot(dades, aes(x = "", fill = P2)) +
+  geom_bar(width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void() + # Això treu el fons gris lleig
+  labs(title = "Gràfic de Sectors: P2", 
+       fill = "Llegenda") # Títol de la llegenda
+```
+
+```{r}
+library(tidyverse)
+
+# Canvia "P3" per la variable nominal que vulguis (ex: P1, Genere...)
+ggplot(dades, aes(x = "", fill = P3)) +
+  geom_bar(width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void() + 
+  labs(title = "Gràfic de Sectors: Variable P3", 
+       fill = "Respostes")
+```
+
+```{r}
+# Canvia "P1" pel nom de la teva variable nominal
+ggplot(dades, aes(x = "", fill = P4)) +
+  geom_bar(width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void() + # Això treu el fons gris lleig
+  labs(title = "Gràfic de Sectors: P4", 
+       fill = "Llegenda") # Títol de la llegenda
+```
+
+```{r}
+# Canvia "P17" per la variable ordinal que vulguis
+ggplot(dades, aes(x = P1)) +
+  geom_bar(fill = "steelblue") + 
+  labs(title = "Distribució de respostes P1",
+       x = "Opció escollida",
+       y = "Nombre de persones") +
+  theme_minimal() +
+  coord_flip() # Això posa les barres horitzontals per llegir millor el text
+```
+
+
+```{r}
+library(tidyverse)
+
+# Canvia "P17" per la variable que vulguis
+ggplot(dades, aes(x = P5)) +
+  geom_bar(fill = "steelblue") + 
+  labs(title = "Distribució de respostes P5",
+       x = "Opció escollida",
+       y = "Nombre de persones") +
+  theme_minimal() +
+  
+  # --- TRUC PER A GRÀFICS VERTICALS ---
+  # Com que hem tret el coord_flip(), girem el text de baix perquè no es trepitgi
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+library(tidyverse)
+
+# Canvia "P17" per la variable que vulguis
+ggplot(dades, aes(x = P10)) +
+  geom_bar(fill = "steelblue") + 
+  labs(title = "Distribució de respostes P10",
+       x = "Opció escollida",
+       y = "Nombre de persones") +
+  theme_minimal() +
+  
+  # --- TRUC PER A GRÀFICS VERTICALS ---
+  # Com que hem tret el coord_flip(), girem el text de baix perquè no es trepitgi
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+library(tidyverse)
+
+# Canvia "P17" per la variable que vulguis
+ggplot(dades, aes(x = P11)) +
+  geom_bar(fill = "steelblue") + 
+  labs(title = "Distribució de respostes P11",
+       x = "Opció escollida",
+       y = "Nombre de persones") +
+  theme_minimal() +
+  
+  # --- TRUC PER A GRÀFICS VERTICALS ---
+  # Com que hem tret el coord_flip(), girem el text de baix perquè no es trepitgi
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+library(tidyverse)
+
+# Canvia "P17" per la variable que vulguis
+ggplot(dades, aes(x = P12)) +
+  geom_bar(fill = "steelblue") + 
+  labs(title = "Distribució de respostes P12",
+       x = "Opció escollida",
+       y = "Nombre de persones") +
+  theme_minimal() +
+  
+  # --- TRUC PER A GRÀFICS VERTICALS ---
+  # Com que hem tret el coord_flip(), girem el text de baix perquè no es trepitgi
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+library(tidyverse)
+
+# Canvia "P17" per la variable que vulguis
+ggplot(dades, aes(x = P13)) +
+  geom_bar(fill = "steelblue") + 
+  labs(title = "Distribució de respostes P13",
+       x = "Opció escollida",
+       y = "Nombre de persones") +
+  theme_minimal() +
+  
+  # --- TRUC PER A GRÀFICS VERTICALS ---
+  # Com que hem tret el coord_flip(), girem el text de baix perquè no es trepitgi
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+library(tidyverse)
+
+# 1. Tria les variables que vols graficar juntes
+vars_ordinals <- c("P14", "P15", "P16", "P17", "P18", "P19", "P20", "P21", "P22", "P23") # Afegeix les que vulguis
+
+# 2. Màgia per fer el gràfic conjunt
+dades %>%
+  select(all_of(vars_ordinals)) %>%
+  pivot_longer(cols = everything(), names_to = "Pregunta", values_to = "Resposta") %>%
+  # Eliminem els NA perquè no surti una barra grisa lletja
+  filter(!is.na(Resposta)) %>%
+  
+  ggplot(aes(x = Resposta)) +
+  geom_bar(fill = "steelblue") +
+  
+  # Això separa els gràfics per "Pregunta"
+  facet_wrap(~Pregunta, scales = "free_y") + 
+  
+  labs(title = "Distribució de respostes per variable",
+       x = "", y = "Freqüència") +
+  theme_minimal() +
+  # Girem el text de baix perquè es llegeixi bé
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+library(tidyverse)
+
+vars_ordinals <- c("P10", "P14", "P15", "P16", "P17", "P18", "P19", "P20", "P21", "P22", "P23") 
+
+dades %>%
+  select(all_of(vars_ordinals)) %>%
+  pivot_longer(cols = everything(), names_to = "Pregunta", values_to = "Resposta") %>%
+  filter(!is.na(Resposta)) %>% # Treiem els buits
+  
+  # --- CANVI CLAU 1: Posem el color DINS de l'aes() ---
+  ggplot(aes(x = Resposta, fill = Resposta)) + 
+  
+  geom_bar() + # Ja no posem "steelblue" aquí, perquè agafi els colors automàtics
+  
+  facet_wrap(~Pregunta, scales = "free_y", ncol = 3) + 
+  
+  # --- CANVI CLAU 2: Girem el gràfic ---
+  coord_flip() +
+  
+  labs(title = "Distribució de respostes per variable",
+       x = "", y = "Freqüència",
+       fill = "Llegenda") + # Títol de la llegenda
+       
+  theme_minimal() +
+  # Movem la llegenda a baix perquè no molesti a la dreta
+  theme(legend.position = "bottom")
+```
+```{r}
+library(questionr)
+
+# 1. Creem la taula bàsica (Compte amb l'ordre: Primer Variable DEPENDENT, segon INDEPENDENT)
+# Exemple: table(dades$Variable_Fila, dades$Variable_Columna)
+taula_creuada <- table(dades$P11, dades$P2)
+
+# 2. Visualitzem la Freqüència Absoluta (n)
+# Això et diu QUANTA gent hi ha a cada casella
+print("--- TAULA DE FREQÜÈNCIES ABSOLUTES (n) ---")
+taula_creuada
+
+# 3. Visualitzem els Percentatges per Columna (%)
+# La funció 'cprop' (Column Proportions) és la clau.
+print("--- TAULA DE PERCENTATGES PER COLUMNA (%) ---")
+cprop(taula_creuada)
+```
+```{r}
+library(questionr)
+
+# 1. Creem la taula bàsica (Compte amb l'ordre: Primer Variable DEPENDENT, segon INDEPENDENT)
+# Exemple: table(dades$Variable_Fila, dades$Variable_Columna)
+taula_creuada <- table(dades$P11, dades$P1)
+
+# 2. Visualitzem la Freqüència Absoluta (n)
+# Això et diu QUANTA gent hi ha a cada casella
+print("--- TAULA DE FREQÜÈNCIES ABSOLUTES (n) ---")
+taula_creuada
+
+# 3. Visualitzem els Percentatges per Columna (%)
+# La funció 'cprop' (Column Proportions) és la clau.
+print("--- TAULA DE PERCENTATGES PER COLUMNA (%) ---")
+cprop(taula_creuada)
+```
+```{r}
+
+library(questionr)
+
+# 1. Creem la taula bàsica (Compte amb l'ordre: Primer Variable DEPENDENT, segon INDEPENDENT)
+# Exemple: table(dades$Variable_Fila, dades$Variable_Columna)
+taula_creuada <- table(dades$P11, dades$P3)
+
+# 2. Visualitzem la Freqüència Absoluta (n)
+# Això et diu QUANTA gent hi ha a cada casella
+print("--- TAULA DE FREQÜÈNCIES ABSOLUTES (n) ---")
+taula_creuada
+
+# 3. Visualitzem els Percentatges per Columna (%)
+# La funció 'cprop' (Column Proportions) és la clau.
+print("--- TAULA DE PERCENTATGES PER COLUMNA (%) ---")
+cprop(taula_creuada)
+```
+```{r}
+library(questionr)
+
+# 1. Creem la taula bàsica (Compte amb l'ordre: Primer Variable DEPENDENT, segon INDEPENDENT)
+# Exemple: table(dades$Variable_Fila, dades$Variable_Columna)
+taula_creuada <- table(dades$P20, dades$P1)
+
+# 2. Visualitzem la Freqüència Absoluta (n)
+# Això et diu QUANTA gent hi ha a cada casella
+print("--- TAULA DE FREQÜÈNCIES ABSOLUTES (n) ---")
+taula_creuada
+
+# 3. Visualitzem els Percentatges per Columna (%)
+# La funció 'cprop' (Column Proportions) és la clau.
+print("--- TAULA DE PERCENTATGES PER COLUMNA (%) ---")
+cprop(taula_creuada)
+```
+
+  
+
+
+
+
+
+  
+  
